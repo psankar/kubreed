@@ -22,8 +22,8 @@ func main() {
 	podName := flag.String("podName", "", "Name of the Pod")
 	apiCount := flag.Int("apiCount", libs.APIs, "Number of APIs")
 	respTime := flag.Duration("respTime", libs.RespTime, "Maximum response time in milliseconds for each API call")
-	rps := flag.IntP("rps", "r", libs.RPS, "Number of Requests Per Second made by each client Pod")
-	branching := flag.IntP("branching", "b", libs.Branching, "Number of Services to which each client Pod should make requests")
+	rps := flag.IntP("rps", "r", libs.RPS, "Outgoing rps from each client Pod")
+	remoteServices := flag.StringArray("remoteServices", []string{}, "Remote services to talk to")
 
 	flag.Parse()
 
@@ -56,21 +56,22 @@ func main() {
 	// launch client threads that talk to other servers
 	go func() {
 		reqCounter := 0
-		sleepTimer := time.Second * 5
-		timer := time.NewTimer(sleepTimer)
-		for {
-			go func(reqCounter int) {
-				for j := 0; j < *branching; j++ {
-					log.Printf("reqCounter %d GET CALL: %d", reqCounter, j)
-				}
-			}(reqCounter)
-			reqCounter++
 
-			if reqCounter == *rps {
-				<-timer.C
-				reqCounter = 0
-				timer.Reset(sleepTimer)
-				log.Printf("New set of client requests started after time")
+		for {
+			// We can add a select loop here and gracefully exit if needed
+			for _, svc := range *remoteServices {
+				for apiIter := 0; apiIter < *apiCount; apiIter++ {
+					go func(svc string, apiIter int) {
+						log.Printf("Make the call to http://%s/api%d", svc, apiIter)
+					}(svc, apiIter)
+					reqCounter++
+
+					if reqCounter == *rps {
+						reqCounter = 0
+						<-time.After(time.Second)
+						log.Print("---------------------")
+					}
+				}
 			}
 		}
 	}()
