@@ -21,7 +21,7 @@ const (
 func main() {
 	podName := flag.String("podName", "", "Name of the Pod")
 	apiCount := flag.Int("apiCount", libs.APIs, "Number of APIs")
-	respTime := flag.Duration("respTime", libs.RespTime, "Maximum response time in milliseconds for each API call")
+	respTime := flag.Duration("respTime", libs.Latency, "Maximum response time in milliseconds for each API call")
 	rps := flag.IntP("rps", "r", libs.RPS, "Outgoing rps from each client Pod")
 	remoteServices := flag.StringArray("remoteServices", []string{}, "Remote services to talk to")
 

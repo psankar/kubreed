@@ -10,5 +10,5 @@ const (
 	APIs        = 10
 	RPS         = 1
 	Branching   = 4
-	RespTime    = time.Second * 2
+	Latency     = time.Second * 2
 )
