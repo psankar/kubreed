@@ -9,6 +9,7 @@ import (
 	"github.com/psankar/kubreed/pkg/libs"
 	"github.com/rs/xid"
 	flag "github.com/spf13/pflag"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -20,7 +21,7 @@ func main() {
 	ns := flag.IntP("namespaces", "n", libs.Namespaces, "Number of Namespaces to create")
 	svc := flag.IntP("services", "s", libs.Services, "Number of Services to create per Namespace")
 	deps := flag.IntP("deployments", "d", libs.Deployments, "Number of Deployments to create per Namespace")
-	pods := flag.IntP("pods", "p", libs.Pods, "Number of Pods to create per Deployment")
+	pods := flag.Int32P("pods", "p", libs.Pods, "Number of Pods to create per Deployment")
 	api := flag.IntP("apis", "a", libs.APIs, "Number of APIs per Pod")
 	rps := flag.IntP("rps", "r", libs.RPS, "Outgoing rps by each client Pod")
 	branching := flag.IntP("branching", "b", libs.Branching, "Number of Services to which each client Pod should make requests")
@@ -81,10 +82,56 @@ func main() {
 	for i := 0; i < *ns; i++ {
 		ns := fmt.Sprintf("%s-%d", runID, i)
 		log.Printf("Creating namespace: %q", ns)
-		_, err := clientset.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Namespaces().Create(ctx,
+			&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}},
+			metav1.CreateOptions{})
 		if err != nil {
 			log.Fatalf("Error creating namespace: %v", err)
+			return
 		}
 		log.Printf("Created namespace: %q", ns)
+
+		for j := 0; j < *deps; j++ {
+			dep := fmt.Sprintf("dep-%d", j)
+			labels := map[string]string{
+				"app": "svc",
+			}
+			objectMeta := metav1.ObjectMeta{
+				Name:      dep,
+				Namespace: ns,
+				Labels:    labels,
+			}
+
+			log.Printf("Creating Deployment: %q", dep)
+			_, err = clientset.AppsV1().Deployments(ns).Create(ctx,
+				&appsv1.Deployment{
+					ObjectMeta: objectMeta,
+					Spec: appsv1.DeploymentSpec{
+						Replicas: pods,
+						Selector: &metav1.LabelSelector{
+							MatchLabels: labels,
+						},
+						Template: v1.PodTemplateSpec{
+							ObjectMeta: objectMeta,
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{{
+									Name:  "kubreed-http",
+									Image: "strm/helloworld-http",
+									Ports: []v1.ContainerPort{{
+										ContainerPort: 80,
+										Protocol:      "TCP",
+									}},
+								}},
+							},
+						},
+					},
+				},
+				metav1.CreateOptions{})
+			if err != nil {
+				log.Fatalf("Error creating deployment: %v", err)
+				return
+			}
+			log.Printf("Created deployment: %q", dep)
+		}
 	}
 }
