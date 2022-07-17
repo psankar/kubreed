@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -86,6 +87,17 @@ func main() {
 
 	runID := xid.New()
 	ctx := context.Background()
+	depConfig := libs.Config{
+		APICount:             *api,
+		RPS:                  *rps,
+		RemoteServices:       []string{"TODO", "TODO"},
+		ResponseTimeInternal: latency.String(),
+	}
+	depConfigBytes, err := json.Marshal(depConfig)
+	if err != nil {
+		log.Fatalf("Error creating Deployment Config: %v", err)
+		return
+	}
 
 	for i := 0; i < *ns; i++ {
 		ns := fmt.Sprintf("%s-%d", runID, i)
@@ -131,16 +143,8 @@ func main() {
 										Protocol:      "TCP",
 									}},
 									Env: []v1.EnvVar{{
-										Name: libs.ConfigEnvVar,
-										Value: `{
-											"apiCount": 3,
-											"responseTime": "1s",
-											"rps": 10,
-											"remoteServices": [
-											  "svc1",
-											  "svc2"
-											]
-										  }`,
+										Name:  libs.ConfigEnvVar,
+										Value: string(depConfigBytes),
 									}},
 								}},
 							},
