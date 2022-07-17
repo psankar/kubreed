@@ -27,6 +27,7 @@ func main() {
 			randSleep := rand.Int63n((c.ResponseTime).Milliseconds())
 			<-time.After(time.Duration(randSleep))
 			w.Write([]byte("OK"))
+			log.Printf("HTTPServer processed request from: %q", r.RemoteAddr)
 		})
 	}
 
@@ -41,7 +42,12 @@ func main() {
 					go func(svc string, apiIter int) {
 						url := fmt.Sprintf("http://%s/api%d", svc, apiIter)
 						resp, err := http.Get(url)
-						log.Printf("HTTP GET %q: %v %v", url, resp, err)
+						if err != nil {
+							log.Printf("HTTPClient GET %q failed: %v", url, err)
+						} else {
+							log.Printf("HTTPClient GET %q: %v", url, resp.Status)
+						}
+
 					}(svc, apiIter)
 					reqCounter++
 
