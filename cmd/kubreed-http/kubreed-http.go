@@ -20,8 +20,6 @@ func main() {
 
 	log.Printf("Config is: %#v", c)
 
-	// validate configuration
-
 	// prepare server
 	for i := 0; i < c.APICount; i++ {
 		endpoint := fmt.Sprintf("/api%d", i)

@@ -3,7 +3,6 @@ module kubreed
 go 1.18
 
 require (
-	github.com/psankar/kubreed v0.0.0-20220716145641-7a1f49745aee
 	github.com/rs/xid v1.4.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.24.3
