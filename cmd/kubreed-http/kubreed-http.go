@@ -77,5 +77,5 @@ func main() {
 	}()
 
 	// Launch server and block forever
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":80", nil))
 }
