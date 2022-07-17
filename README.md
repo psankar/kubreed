@@ -1,6 +1,10 @@
 # kubreed
-breed kubernetes pods, services, etc.
+Breed kubernetes deployments, pods, services and generate traffic
 
 ```
-go run cmd/kubreed-http/kubreed-http.go --apiCount 3 --respTime=1s --rps 10 --remoteServices "svc1" --remoteServices="svc2"
+# Show various parameters and the default values
+$ go run cmd/kubreed-cli/kubreed.go --help
+
+# Breed kubernetes deployments, pods, services and generate traffic
+go run cmd/kubreed-cli/kubreed.go
 ```
