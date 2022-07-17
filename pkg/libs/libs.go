@@ -4,7 +4,6 @@ import "time"
 
 const (
 	Namespaces  = 1
-	Services    = 5
 	Deployments = 5
 	Pods        = 3
 	APIs        = 10

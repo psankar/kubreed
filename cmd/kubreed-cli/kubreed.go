@@ -20,8 +20,7 @@ import (
 
 func main() {
 	ns := flag.IntP("namespaces", "n", libs.Namespaces, "Number of Namespaces to create")
-	svc := flag.IntP("services", "s", libs.Services, "Number of Services to create per Namespace")
-	deps := flag.IntP("deployments", "d", libs.Deployments, "Number of Deployments to create per Namespace")
+	deps := flag.IntP("deployments", "d", libs.Deployments, "Number of Deployments/Services to create per Namespace")
 	pods := flag.Int32P("pods", "p", libs.Pods, "Number of Pods to create per Deployment")
 	api := flag.IntP("apis", "a", libs.APIs, "Number of APIs per Pod")
 	rps := flag.IntP("rps", "r", libs.RPS, "Outgoing rps by each client Pod")
@@ -39,11 +38,6 @@ func main() {
 
 	if *ns < 1 {
 		log.Fatalf("Invalid number of Namespaces")
-		return
-	}
-
-	if *svc > *deps {
-		log.Fatalf("Number of Services must be more than number of Deployments")
 		return
 	}
 
@@ -92,7 +86,7 @@ func main() {
 		}
 		log.Printf("Created namespace: %q", ns)
 
-		for j := 0; j < *svc; j++ {
+		for j := 0; j < *deps; j++ {
 			svcName := fmt.Sprintf("svc-%d", j)
 			_, err = clientset.CoreV1().Services(ns).Create(ctx,
 				&v1.Service{
@@ -120,14 +114,11 @@ func main() {
 			if err != nil {
 				log.Fatalf("Error creating service: %v", err)
 			}
-		}
 
-		for k := 0; k < *deps; k++ {
-			dep := fmt.Sprintf("dep-%d", k)
-			serviceNum := fmt.Sprintf("svc-%d", k%*svc)
+			dep := fmt.Sprintf("dep-%d", j)
 			labels := map[string]string{
 				"app": dep,
-				"svc": serviceNum,
+				"svc": svcName,
 			}
 			objectMeta := metav1.ObjectMeta{
 				Name:      dep,
