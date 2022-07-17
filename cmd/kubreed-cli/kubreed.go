@@ -12,6 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -91,10 +92,42 @@ func main() {
 		}
 		log.Printf("Created namespace: %q", ns)
 
-		for j := 0; j < *deps; j++ {
-			dep := fmt.Sprintf("dep-%d", j)
+		for j := 0; j < *svc; j++ {
+			svcName := fmt.Sprintf("svc-%d", j)
+			_, err = clientset.CoreV1().Services(ns).Create(ctx,
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      svcName,
+						Namespace: ns,
+						Labels:    map[string]string{},
+					},
+					Spec: v1.ServiceSpec{
+						Selector: map[string]string{
+							"app": svcName,
+						},
+						Ports: []v1.ServicePort{
+							{
+								Port: 80,
+								TargetPort: intstr.IntOrString{
+									Type:   intstr.Int,
+									IntVal: 80,
+								},
+							},
+						},
+					},
+				},
+				metav1.CreateOptions{})
+			if err != nil {
+				log.Fatalf("Error creating service: %v", err)
+			}
+		}
+
+		for k := 0; k < *deps; k++ {
+			dep := fmt.Sprintf("dep-%d", k)
+			serviceNum := fmt.Sprintf("svc-%d", k%*svc)
 			labels := map[string]string{
-				"app": "svc",
+				"app": dep,
+				"svc": serviceNum,
 			}
 			objectMeta := metav1.ObjectMeta{
 				Name:      dep,
