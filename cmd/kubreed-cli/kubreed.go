@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"path/filepath"
 	"time"
 
@@ -87,17 +88,6 @@ func main() {
 
 	runID := xid.New()
 	ctx := context.Background()
-	depConfig := libs.Config{
-		APICount:             *api,
-		RPS:                  *rps,
-		RemoteServices:       []string{"TODO", "TODO"},
-		ResponseTimeInternal: latency.String(),
-	}
-	depConfigBytes, err := json.Marshal(depConfig)
-	if err != nil {
-		log.Fatalf("Error creating Deployment Config: %v", err)
-		return
-	}
 
 	for i := 0; i < *ns; i++ {
 		ns := fmt.Sprintf("%s-%d", runID, i)
@@ -121,6 +111,31 @@ func main() {
 				Name:      dep,
 				Namespace: ns,
 				Labels:    labels,
+			}
+
+			var remoteServices []string
+			for k := 0; k < *branching; k++ {
+				for {
+					remoteService := rand.Intn(*deps)
+					if remoteService != j {
+						remoteServices = append(remoteServices,
+							fmt.Sprintf("svc-%d", remoteService))
+						break
+					}
+					// loop until we get a remoteService that is not self
+				}
+			}
+
+			depConfig := libs.Config{
+				APICount:             *api,
+				RPS:                  *rps,
+				RemoteServices:       remoteServices,
+				ResponseTimeInternal: latency.String(),
+			}
+			depConfigBytes, err := json.Marshal(depConfig)
+			if err != nil {
+				log.Fatalf("Error creating Deployment Config: %v", err)
+				return
 			}
 
 			log.Printf("Creating Deployment: %q", dep)
