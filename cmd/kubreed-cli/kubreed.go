@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
-	"github.com/psankar/kubreed/pkg/libs"
+	"kubreed/pkg/libs"
+
 	"github.com/rs/xid"
 	flag "github.com/spf13/pflag"
 	appsv1 "k8s.io/api/apps/v1"
@@ -18,14 +20,25 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// default values
+const (
+	Namespaces  = 1
+	Deployments = 5
+	Pods        = 3
+	APIs        = 10
+	RPS         = 1
+	Branching   = 4
+	Latency     = time.Second * 2
+)
+
 func main() {
-	ns := flag.IntP("namespaces", "n", libs.Namespaces, "Number of Namespaces to create")
-	deps := flag.IntP("deployments", "d", libs.Deployments, "Number of Deployments/Services to create per Namespace")
-	pods := flag.Int32P("pods", "p", libs.Pods, "Number of Pods to create per Deployment")
-	api := flag.IntP("apis", "a", libs.APIs, "Number of APIs per Pod")
-	rps := flag.IntP("rps", "r", libs.RPS, "Outgoing rps by each client Pod")
-	branching := flag.IntP("branching", "b", libs.Branching, "Number of Services to which each client Pod should make requests")
-	latency := flag.DurationP("latency", "l", libs.Latency, "Maximum response time in milliseconds for each API call")
+	ns := flag.IntP("namespaces", "n", Namespaces, "Number of Namespaces to create")
+	deps := flag.IntP("deployments", "d", Deployments, "Number of Deployments/Services to create per Namespace")
+	pods := flag.Int32P("pods", "p", Pods, "Number of Pods to create per Deployment")
+	api := flag.IntP("apis", "a", APIs, "Number of APIs per Pod")
+	rps := flag.IntP("rps", "r", RPS, "Outgoing rps by each client Pod")
+	branching := flag.IntP("branching", "b", Branching, "Number of Services to which each client Pod should make requests")
+	latency := flag.DurationP("latency", "l", Latency, "Maximum response time in milliseconds for each API call")
 
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
@@ -88,37 +101,9 @@ func main() {
 
 		for j := 0; j < *deps; j++ {
 			svcName := fmt.Sprintf("svc-%d", j)
-			_, err = clientset.CoreV1().Services(ns).Create(ctx,
-				&v1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      svcName,
-						Namespace: ns,
-						Labels:    map[string]string{},
-					},
-					Spec: v1.ServiceSpec{
-						Selector: map[string]string{
-							"app": svcName,
-						},
-						Ports: []v1.ServicePort{
-							{
-								Port: 80,
-								TargetPort: intstr.IntOrString{
-									Type:   intstr.Int,
-									IntVal: 80,
-								},
-							},
-						},
-					},
-				},
-				metav1.CreateOptions{})
-			if err != nil {
-				log.Fatalf("Error creating service: %v", err)
-			}
-
 			dep := fmt.Sprintf("dep-%d", j)
 			labels := map[string]string{
 				"app": dep,
-				"svc": svcName,
 			}
 			objectMeta := metav1.ObjectMeta{
 				Name:      dep,
@@ -140,10 +125,22 @@ func main() {
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{{
 									Name:  "kubreed-http",
-									Image: "strm/helloworld-http",
+									Image: "psankar/kubreed-http",
 									Ports: []v1.ContainerPort{{
 										ContainerPort: 80,
 										Protocol:      "TCP",
+									}},
+									Env: []v1.EnvVar{{
+										Name: libs.ConfigEnvVar,
+										Value: `{
+											"apiCount": 3,
+											"responseTime": "1s",
+											"rps": 10,
+											"remoteServices": [
+											  "svc1",
+											  "svc2"
+											]
+										  }`,
 									}},
 								}},
 							},
@@ -156,6 +153,34 @@ func main() {
 				return
 			}
 			log.Printf("Created deployment: %q", dep)
+
+			log.Printf("Creating service: %q", svcName)
+			_, err = clientset.CoreV1().Services(ns).Create(ctx,
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      svcName,
+						Namespace: ns,
+						Labels:    map[string]string{},
+					},
+					Spec: v1.ServiceSpec{
+						Selector: map[string]string{
+							"app": dep,
+						},
+						Ports: []v1.ServicePort{
+							{
+								Port: 80,
+								TargetPort: intstr.IntOrString{
+									Type:   intstr.Int,
+									IntVal: 80,
+								},
+							},
+						},
+					},
+				},
+				metav1.CreateOptions{})
+			if err != nil {
+				log.Fatalf("Error creating service: %v", err)
+			}
 		}
 	}
 }
