@@ -39,7 +39,9 @@ func main() {
 			for _, svc := range c.RemoteServices {
 				for apiIter := 0; apiIter < c.APICount; apiIter++ {
 					go func(svc string, apiIter int) {
-						log.Printf("Make the call to http://%s/api%d", svc, apiIter)
+						url := fmt.Sprintf("http://%s/api%d", svc, apiIter)
+						resp, err := http.Get(url)
+						log.Printf("HTTP GET %q: %v %v", url, resp, err)
 					}(svc, apiIter)
 					reqCounter++
 
