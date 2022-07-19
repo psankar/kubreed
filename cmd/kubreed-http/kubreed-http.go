@@ -47,7 +47,7 @@ func main() {
 						} else {
 							log.Printf("HTTPClient GET %q: %v", url, resp.Status)
 						}
-
+						resp.Body.Close()
 					}(svc, apiIter)
 					reqCounter++
 
