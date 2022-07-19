@@ -152,7 +152,7 @@ func main() {
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{{
 									Name:  "kubreed-http",
-									Image: "psankar/kubreed-http:d2a5657",
+									Image: "psankar/kubreed-http:c5466e0",
 									Ports: []v1.ContainerPort{{
 										ContainerPort: 80,
 										Protocol:      "TCP",
