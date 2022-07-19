@@ -44,9 +44,9 @@ func main() {
 						resp, err := http.Get(url)
 						if err != nil {
 							log.Printf("HTTPClient GET %q failed: %v", url, err)
-						} else {
-							log.Printf("HTTPClient GET %q: %v", url, resp.Status)
+							return
 						}
+						log.Printf("HTTPClient GET %q: %v", url, resp.Status)
 						resp.Body.Close()
 					}(svc, apiIter)
 					reqCounter++
