@@ -104,6 +104,12 @@ $ kubectl logs -n cba56j2ij4f1f847mf40-0   dep-0-676f58b484-6rnbl
 2022/07/17 18:22:37 HTTPServer processed request from: "10.244.0.155:55530"
 ```
 
+# Note
+In case you run into dockerhub limits for pulling the image, you can push the image to your own container registry and use the `--image` parameter while launching `kubreed`.
+```
+$ kubreed --image "gcr.io/mycompany/kubreed-http:1.0"
+```
+
 # TODO
 * Code cleanups, re-organizing for readability
 * Test cases
