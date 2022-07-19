@@ -41,6 +41,7 @@ func main() {
 	rps := flag.IntP("rps", "r", RPS, "Outgoing rps by each client Pod")
 	branching := flag.IntP("branching", "b", Branching, "Number of Services to which each client Pod should make requests")
 	latency := flag.DurationP("latency", "l", Latency, "Maximum response time in milliseconds for each API call")
+	image := flag.StringP("image", "i", "psankar/kubreed-http:c5466e0", "Image for kubreed-http")
 
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
@@ -152,7 +153,7 @@ func main() {
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{{
 									Name:  "kubreed-http",
-									Image: "psankar/kubreed-http:c5466e0",
+									Image: *image,
 									Ports: []v1.ContainerPort{{
 										ContainerPort: 80,
 										Protocol:      "TCP",
