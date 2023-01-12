@@ -188,6 +188,7 @@ func main() {
 						},
 						Ports: []v1.ServicePort{
 							{
+								Name: "http-svc",
 								Port: 80,
 								TargetPort: intstr.IntOrString{
 									Type:   intstr.Int,
